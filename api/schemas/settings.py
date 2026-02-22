@@ -14,6 +14,7 @@ class LLMSettingsResponse(BaseModel):
     tavily_api_key: str = ""
     jina_api_key: str = ""
     apify_api_key: str = ""
+    brave_api_key: str = ""
     audit_api_key: str = ""
     audit_base_url: str = ""
     audit_model: str = ""
@@ -26,6 +27,7 @@ class LLMSettingsUpdate(BaseModel):
     tavily_api_key: str | None = None
     jina_api_key: str | None = None
     apify_api_key: str | None = None
+    brave_api_key: str | None = None
     audit_api_key: str | None = None
     audit_base_url: str | None = None
     audit_model: str | None = None

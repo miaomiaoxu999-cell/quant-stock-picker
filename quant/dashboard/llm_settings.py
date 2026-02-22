@@ -18,6 +18,7 @@ _DEFAULTS = {
     "tavily_api_key": "",
     "jina_api_key": "",
     "apify_api_key": "",
+    "brave_api_key": "",
     # 审计模型（独立配置，留空则复用主 LLM）
     "audit_api_key": "",
     "audit_base_url": "https://api.siliconflow.cn/v1",
@@ -87,6 +88,11 @@ def get_jina_key() -> str:
 def get_apify_key() -> str:
     """获取 Apify API Key"""
     return load_llm_settings().get("apify_api_key", "")
+
+
+def get_brave_key() -> str:
+    """获取 Brave Search API Key"""
+    return load_llm_settings().get("brave_api_key", "")
 
 
 def render_settings_page() -> None:

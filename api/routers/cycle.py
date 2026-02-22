@@ -238,11 +238,13 @@ def _run_cycle_analysis(
     from quant.research.tavily_client import TavilyClient
     from quant.research.jina_reader import JinaReader
     from quant.research.apify_client import ApifyClient
+    from quant.research.brave_client import BraveClient
 
     try:
         tavily_key = settings.get("tavily_api_key", "")
         jina_key = settings.get("jina_api_key", "")
         apify_key = settings.get("apify_api_key", "")
+        brave_key = settings.get("brave_api_key", "")
 
         top_factors = sorted(factors, key=lambda f: f.get("weight", 0), reverse=True)
 
@@ -254,6 +256,7 @@ def _run_cycle_analysis(
             tavily=TavilyClient(tavily_key) if tavily_key else None,
             jina=JinaReader(jina_key) if jina_key else None,
             apify=ApifyClient(apify_key) if apify_key else None,
+            brave=BraveClient(brave_key) if brave_key else None,
         )
 
         factor_data_map = {}
@@ -273,9 +276,15 @@ def _run_cycle_analysis(
             def on_step(step, status, detail, _name=f["name"]):
                 if step == "guidance" and status == "done":
                     progress["log"].append(f"  AI data source guidance complete")
+                elif step == "search" and status == "done":
+                    n = detail.get("count", 0) if isinstance(detail, dict) else 0
+                    sources = detail.get("sources", []) if isinstance(detail, dict) else []
+                    progress["log"].append(f"  Search complete: {n} results from {', '.join(sources)}")
                 elif step == "tavily" and status == "done":
                     n = len(detail) if isinstance(detail, list) else 0
-                    progress["log"].append(f"  Search complete: {n} results")
+                    progress["log"].append(f"  Tavily search: {n} results")
+                elif step == "brave" and status == "done":
+                    progress["log"].append(f"  Brave search complete")
                 elif step == "jina" and status == "done":
                     chars = detail.get("chars", 0) if isinstance(detail, dict) else 0
                     progress["log"].append(f"  Web scrape: {chars} chars")

@@ -47,6 +47,7 @@ _LLM_DEFAULTS = {
     "tavily_api_key": "",
     "jina_api_key": "",
     "apify_api_key": "",
+    "brave_api_key": "",
     "audit_api_key": "",
     "audit_base_url": "https://api.siliconflow.cn/v1",
     "audit_model": "deepseek-ai/DeepSeek-V3",

@@ -90,7 +90,7 @@ def build_factor_chat_messages(
 # ==================== 周期分析 — 数据源指导 ====================
 
 DATA_SOURCE_GUIDANCE = """\
-你是金融数据工程师。用户需要获取「{sector}」板块中「{factor_name}」因子**过去 8-15 年（2010年至今）**的历史数据。
+你是金融数据工程师。用户需要获取「{sector}」板块中「{factor_name}」因子**过去 8-15 年（2010年至今，当前是{current_year}年）**的历史数据。
 该因子的描述为: {description}
 该因子的数据来源描述为: {data_source}
 
@@ -99,7 +99,7 @@ DATA_SOURCE_GUIDANCE = """\
 要求：
 1. suggested_urls: 最可能找到**长期历史数据**的 2-3 个网站 URL（优先中文金融数据网站如 SMM、百川盈孚、卓创资讯、Wind、国家统计局等）。优先找包含 8 年以上历史数据的来源，而非近 1-2 年的短期数据。
 2. akshare_api: 如果 AKShare 有对应接口，给出函数名和参数（如 "futures_main_sina(symbol='LC0')"），没有则为 null
-3. search_queries: 用于搜索该数据的 3-4 个查询词（中英文混合）。关键词应包含年份范围如 "2010-2025"、"十年"、"历史走势" 等，确保搜到长期数据而非近期新闻。
+3. search_queries: 用于搜索该数据的 3-4 个查询词（中英文混合）。关键词应包含年份范围如 "2010-{current_year}"、"十年"、"历史走势" 等，确保搜到长期数据而非近期新闻。**必须包含 {current_year} 年的最新数据**。
 
 严格输出 JSON，不要输出任何其他内容：
 
@@ -107,7 +107,7 @@ DATA_SOURCE_GUIDANCE = """\
 {{
   "suggested_urls": ["https://..."],
   "akshare_api": null,
-  "search_queries": ["查询1 2010-2025 历史走势", "查询2 十年数据", "query3 historical data"]
+  "search_queries": ["查询1 2010-{current_year} 历史走势", "查询2 十年数据", "query3 historical data"]
 }}
 ```
 """
@@ -117,6 +117,7 @@ def build_data_source_guidance_prompt(
     sector: str, factor_name: str, description: str, data_source: str,
 ) -> list[dict]:
     """构建数据源指导的 messages"""
+    current_year = datetime.now().year
     return [
         {
             "role": "system",
@@ -125,6 +126,7 @@ def build_data_source_guidance_prompt(
                 factor_name=factor_name,
                 description=description,
                 data_source=data_source,
+                current_year=current_year,
             ),
         },
         {

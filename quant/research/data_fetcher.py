@@ -16,6 +16,7 @@ from quant.llm.prompts import build_data_source_guidance_prompt
 from quant.research.tavily_client import TavilyClient
 from quant.research.jina_reader import JinaReader
 from quant.research.apify_client import ApifyClient
+from quant.research.brave_client import BraveClient
 
 
 @dataclass
@@ -67,7 +68,7 @@ def _contains_useful_data(content: str, factor_name: str) -> bool:
 
 
 class DataFetcher:
-    """多级回退数据获取：LLM指导 -> AKShare -> Tavily -> Jina -> Apify"""
+    """多级回退数据获取：LLM指导 -> AKShare -> Tavily/Brave -> Jina -> Apify"""
 
     def __init__(
         self,
@@ -75,12 +76,14 @@ class DataFetcher:
         tavily: Optional[TavilyClient] = None,
         jina: Optional[JinaReader] = None,
         apify: Optional[ApifyClient] = None,
+        brave: Optional[BraveClient] = None,
         akshare_provider=None,
     ):
         self.llm = llm_client
         self.tavily = tavily
         self.jina = jina
         self.apify = apify
+        self.brave = brave
         self.akshare = akshare_provider
         # 归档数据
         self._archive: dict[str, Any] = {}
@@ -132,13 +135,15 @@ class DataFetcher:
         elif akshare_api:
             cb("akshare", "skip", {"reason": "AKShare provider not configured"})
 
-        # ---- Step 3: Tavily 搜索 ----
+        # ---- Step 3: Tavily + Brave 并行搜索 ----
         search_results = []
         news_items = []
+        queries = guidance.get("search_queries", [])
+        if not queries:
+            queries = [f"{sector} {name} 历史数据 走势"]
+
+        # Tavily 搜索
         if self.tavily:
-            queries = guidance.get("search_queries", [])
-            if not queries:
-                queries = [f"{sector} {name} 历史数据 走势"]
             cb("tavily", "start", {"queries": queries[:3]})
             for query in queries[:3]:
                 try:
@@ -151,14 +156,27 @@ class DataFetcher:
                 result_list = results.get("results", [])
                 fetch_log.append({"url": query, "method": "tavily", "success": len(result_list) > 0, "chars": len(result_list)})
                 for r in result_list:
+                    r["_source"] = "tavily"
                     search_results.append(r)
-                    news_items.append({
-                        "title": r.get("title", ""),
-                        "url": r.get("url", ""),
-                        "snippet": r.get("content", "")[:200],
-                    })
 
-        # 去重 URL
+        # Brave 搜索（并行补充）
+        if self.brave:
+            cb("brave", "start", {"queries": queries[:3]})
+            for query in queries[:3]:
+                try:
+                    results = self.brave.search(query, max_results=3)
+                except Exception as e:
+                    logger.debug(f"Brave search failed for '{query}': {e}")
+                    fetch_log.append({"url": query, "method": "brave", "success": False, "chars": 0})
+                    continue
+                self._archive[f"brave_{name}_{query[:20]}"] = results
+                result_list = results.get("results", [])
+                fetch_log.append({"url": query, "method": "brave", "success": len(result_list) > 0, "chars": len(result_list)})
+                for r in result_list:
+                    r["_source"] = "brave"
+                    search_results.append(r)
+
+        # 去重 URL，按发布时间排序（最新的优先）
         seen_urls = set()
         unique_results = []
         for r in search_results:
@@ -166,12 +184,28 @@ class DataFetcher:
             if url and url not in seen_urls:
                 seen_urls.add(url)
                 unique_results.append(r)
+
+        # 按发布时间排序（有 published_date 的排前面）
+        def get_date_key(r):
+            date_str = r.get("published_date", "")
+            return date_str if date_str else ""
+        unique_results.sort(key=get_date_key, reverse=True)
         search_results = unique_results
-        if self.tavily:
+
+        if self.tavily or self.brave:
             if search_results:
-                cb("tavily", "done", search_results)
+                sources = [r.get("_source", "") for r in search_results[:5]]
+                cb("search", "done", {"count": len(search_results), "sources": list(set(sources))})
             else:
-                cb("tavily", "fail", {"reason": "No results from any query"})
+                cb("search", "fail", {"reason": "No results from any query"})
+
+        # 构建 news_items
+        for r in search_results[:10]:
+            news_items.append({
+                "title": r.get("title", ""),
+                "url": r.get("url", ""),
+                "snippet": r.get("content", "")[:200],
+            })
 
         # ---- Step 4: Jina Reader 抓取 top URL ----
         detailed_text = ""

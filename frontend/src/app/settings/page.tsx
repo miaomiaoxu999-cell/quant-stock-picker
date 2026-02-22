@@ -171,6 +171,12 @@ export default function SettingsPage() {
             help="Tavily AI search for industry data"
           />
           <PasswordField
+            label="Brave Search API Key"
+            value={form.brave_api_key}
+            onChange={(v) => update("brave_api_key", v)}
+            help="Brave Search API for parallel search (improves coverage)"
+          />
+          <PasswordField
             label="Jina Reader API Key"
             value={form.jina_api_key}
             onChange={(v) => update("jina_api_key", v)}
