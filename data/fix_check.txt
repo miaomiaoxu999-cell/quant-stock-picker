@@ -1,0 +1,5 @@
+Dairy stocks: 31
+Code dtype: object
+Sample codes: ['600419', '600127', '605388', '605179', '002732']
+All codes are strings: True
+All codes 6-digit: True

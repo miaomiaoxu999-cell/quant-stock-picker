@@ -1,0 +1,8 @@
+Stock list code dtype: int64
+Stock list codes sample: [600419, 600127, 605388, 605179, 2732]
+Realtime code dtype: int64
+Realtime codes sample: [600419, 600127, 605179, 605388, 2732]
+Realtime matched: 31
+
+After merge - non-null market_cap: 31/31
+After merge - non-null amount: 31/31

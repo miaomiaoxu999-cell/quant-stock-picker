@@ -1,0 +1,8 @@
+Columns after merge: ['code', 'name', 'industry', 'name_rt', 'price', 'pe_ttm', 'pb', 'market_cap', 'volume', 'amount']
+Non-null price: 1079/1082
+Non-null market_cap: 1079/1082
+Non-null amount: 1078/1082
+Market cap range: 1195038080 ~ 1929041106202
+Amount range: 5362395 ~ 9152032797
+Stocks with market_cap < 2B: 22
+Stocks with amount < 5M: 0

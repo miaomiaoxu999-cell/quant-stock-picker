@@ -1,0 +1,18 @@
+{
+  "total_return": 0.7106066136113172,
+  "annual_return": 0.09366666023040282,
+  "annual_volatility": 0.1829834558454999,
+  "sharpe_ratio": 0.3752615771361361,
+  "max_drawdown": -0.20241041984154862,
+  "drawdown_start": "2022-03-07 00:00:00",
+  "drawdown_end": "2022-04-26 00:00:00",
+  "alpha": -0.01049311584556347,
+  "beta": 0.4944460130854902,
+  "info_ratio": -0.46828507310024753,
+  "calmar_ratio": 0.4627561185028279,
+  "win_rate": 0.4305555555555556,
+  "benchmark_total_return": 1.706443416211226,
+  "benchmark_annual_return": 0.18063554043247465,
+  "excess_return": -0.9958368025999089,
+  "trading_days": 1454
+}

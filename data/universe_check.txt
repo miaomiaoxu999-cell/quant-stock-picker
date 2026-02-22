@@ -1,0 +1,15 @@
+Total: 37 stocks
+
+Industry distribution:
+  dairy: 31
+  power: 6
+
+Columns: ['code', 'name', 'industry', 'price', 'pe_ttm', 'pb', 'market_cap', 'volume']
+
+Sample:
+     code  name industry  price  pe_ttm     pb    market_cap      volume
+0  600157  永泰能源    power   1.63  134.79   0.76  3.556296e+10   6842726.0
+1  688191  智洋创新    power  38.41  145.25  10.46  8.897691e+09         NaN
+2  002506  协鑫集成    power   4.31  -34.07  14.17  2.521486e+10  12011468.0
+3  200037  深南电B    power    NaN     NaN    NaN           NaN         NaN
+4  900937  华电B股    power    NaN     NaN    NaN           NaN         NaN

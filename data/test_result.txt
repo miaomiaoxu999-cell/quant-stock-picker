@@ -1,0 +1,12 @@
+Dairy stocks: 31
+     code  name industry
+0  600419  天润乳业    dairy
+1  600127  金健米业    dairy
+2  605388  均瑶健康    dairy
+3  605179  一鸣食品    dairy
+4  002732  燕塘乳业    dairy
+5  001318  阳光乳业    dairy
+6  002570   贝因美    dairy
+7  002719   麦趣尔    dairy
+8  688089   嘉必优    dairy
+9  001219  青岛食品    dairy

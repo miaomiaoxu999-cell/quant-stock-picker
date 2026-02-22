@@ -1,0 +1,108 @@
+# 周期底部龙头投资策略 - 配置文件
+
+# ===== 行业配置（3行业6只固定龙头）=====
+industries:
+  lithium:
+    name: "锂盐（碳酸锂）"
+    target_weight: 0.40
+    cycle_status: "下行尾段，即将反转"
+    cycle_probability: 0.90
+    turning_signals:
+      - "碳酸锂价格站稳8万/吨"
+      - "电池厂产能利用率>90%"
+    stocks:
+      - code: "002466"
+        name: "天齐锂业"
+        weight: 0.20
+        pb_peak_2022: 8.2
+        pb_peak_2017: 7.5
+      - code: "002460"
+        name: "赣锋锂业"
+        weight: 0.20
+        pb_peak_2022: 7.8
+        pb_peak_2017: 7.2
+      - code: "000792"
+        name: "盐湖股份"
+        weight: 0.00
+        pb_peak_2022: null
+        pb_peak_2017: null
+        role: "备选替代"
+
+  phosphorus:
+    name: "磷化工"
+    target_weight: 0.30
+    cycle_status: "周期底部区域"
+    cycle_probability: 0.75
+    turning_signals:
+      - "磷铵价格企稳回升"
+      - "下游需求季节性回暖"
+    stocks:
+      - code: "600096"
+        name: "云天化"
+        weight: 0.30
+        pb_peak_2022: 4.5
+        pb_peak_2017: 4.0
+
+  basic_chem:
+    name: "基础化工"
+    target_weight: 0.20
+    cycle_status: "周期中低位"
+    cycle_probability: 0.70
+    turning_signals:
+      - "MDI价格见底回升"
+      - "化工品库存去化完成"
+    stocks:
+      - code: "600309"
+        name: "万华化学"
+        weight: 0.10
+        pb_peak_2022: 3.9
+        pb_peak_2017: 3.5
+      - code: "600426"
+        name: "华鲁恒升"
+        weight: 0.10
+        pb_peak_2022: 3.2
+        pb_peak_2017: 3.0
+
+# 现金备用比例
+cash_reserve: 0.10
+
+# ===== 买入策略 =====
+buy_strategy:
+  initial_ratio: 0.30       # 首次买入计划仓位的30%
+  dip_buy_threshold: 0.08   # 每下跌8%补仓一次
+  max_chase_pct: 0.10       # 不追涨超10%的标的
+
+# ===== 卖出策略 =====
+sell_strategy:
+  double_sell_ratio: 0.50   # 翻倍卖50%
+  pb_target_sell: 0.50      # PB到高点卖剩余50%
+
+# ===== 止损策略 =====
+stop_loss:
+  level_1_drawdown: 0.15    # 回撤15%减仓50%
+  level_1_action: 0.50
+  level_2_drawdown: 0.25    # 回撤25%全止损
+  level_2_action: 0.00
+
+# ===== 估值判断标准 =====
+valuation:
+  undervalued_ratio: 0.50   # PB <= 高点的1/2 = 低估
+  fair_ratio: 0.67          # PB 处于高点的1/2~2/3 = 合理
+  overvalued_ratio: 0.67    # PB >= 高点的2/3 = 高估
+
+# ===== 复盘周期 =====
+review:
+  monthly: "检查股价、估值变化"
+  quarterly: "分析行业供需格局、公司业绩"
+  yearly: "评估策略有效性，优化筛选标准"
+
+# ===== 缓存配置 =====
+cache:
+  db_path: "data/cache.db"
+  expire_hours: 24
+  financial_expire_days: 7
+
+# ===== 选股过滤（基础过滤保留）=====
+filters:
+  exclude_st: true
+  exclude_suspended: true

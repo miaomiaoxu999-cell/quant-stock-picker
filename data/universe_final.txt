@@ -1,0 +1,10 @@
+Total: 1058 stocks
+
+Industry distribution:
+  dairy: 30
+  energy_storage: 206
+  oil: 85
+  pet: 64
+  power: 673
+
+Columns: ['code', 'name', 'industry']

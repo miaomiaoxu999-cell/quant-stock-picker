@@ -1,0 +1,6 @@
+Total: 1038
+  dairy: 29
+  energy_storage: 204
+  oil: 81
+  pet: 61
+  power: 663

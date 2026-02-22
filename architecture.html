@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>石油上游周频策略 - 架构可视化</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    padding: 40px 20px;
+    line-height: 1.7;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  h1 {
+    color: #58a6ff;
+    font-size: 2.2em;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: #8b949e;
+    font-size: 1.1em;
+    margin-bottom: 40px;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+    padding: 16px 20px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+  }
+  .legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+  }
+  .dot-blue { background: #58a6ff; }
+  .dot-green { background: #3fb950; }
+  .dot-orange { background: #f0883e; }
+  .dot-purple { background: #bc8cff; }
+  .dot-red { background: #f85149; }
+
+  /* Cards */
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 32px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: #58a6ff; }
+
+  .card h2 {
+    color: #58a6ff;
+    font-size: 1.4em;
+    margin-bottom: 4px;
+  }
+  .card .num {
+    color: #3fb950;
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-right: 8px;
+  }
+  .card .desc {
+    color: #8b949e;
+    font-size: 0.95em;
+    margin-bottom: 20px;
+  }
+
+  .mermaid {
+    display: flex;
+    justify-content: center;
+    margin: 10px 0;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    color: #484f58;
+    font-size: 0.85em;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #21262d;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>石油上游周频策略</h1>
+<p class="subtitle">
+  把石油上游（中石油、中海油这些）从月度选股系统里拆出来，单独做一个每周调仓的策略。<br>
+  核心逻辑：美股油企涨跌对 A 股石油股有 1-3 天的领先效应，月频捕捉不到，周频刚好。
+</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot dot-blue"></div> 核心流程</div>
+  <div class="legend-item"><div class="legend-dot dot-green"></div> 外部数据源</div>
+  <div class="legend-item"><div class="legend-dot dot-orange"></div> 因子计算</div>
+  <div class="legend-item"><div class="legend-dot dot-purple"></div> 决策输出</div>
+  <div class="legend-item"><div class="legend-dot dot-red"></div> 仓位动作</div>
+</div>
+
+<!-- ==================== 图表 1 ==================== -->
+<div class="card">
+  <h2><span class="num">#1</span>全局鸟瞰 — 两套策略怎么分工的</h2>
+  <p class="desc">整个系统有两条线并行跑：月频管 5 个行业的大盘选股，周频专门盯石油上游。两条线各管各的，互不干扰。</p>
+  <div class="mermaid">
+graph LR
+    subgraph monthly["月频系统（每月1号）"]
+        direction TB
+        M1["5 行业选股<br/>电力/乳制品/宠物/储能/石油中下游"]
+        M2["5 层因子打分<br/>基本面+AI调研+情报+风控+产业链"]
+        M3["组合构建<br/>20只股票，各行业配比"]
+        M1 --> M2 --> M3
+    end
+
+    subgraph weekly["周频系统（每周一）"]
+        direction TB
+        W1["3 个数据源<br/>美股油企 / EIA库存 / 布伦特原油"]
+        W2["3 因子合成<br/>一个综合信号 -1 到 +1"]
+        W3["仓位决策<br/>满仓/半仓/轻仓/空仓"]
+        W1 --> W2 --> W3
+    end
+
+    CONFIG["config.yaml<br/>统一配置文件"] -.-> monthly
+    CONFIG -.-> weekly
+
+    monthly --> DASH["Streamlit 看板<br/>两套策略都能看"]
+    weekly --> DASH
+
+    style monthly fill:#1a2332,stroke:#58a6ff,stroke-width:2px,color:#c9d1d9
+    style weekly fill:#1a2332,stroke:#f0883e,stroke-width:2px,color:#c9d1d9
+    style CONFIG fill:#1a2332,stroke:#bc8cff,color:#c9d1d9
+    style DASH fill:#1a2332,stroke:#3fb950,color:#c9d1d9
+    style M1 fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style M2 fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style M3 fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style W1 fill:#161b22,stroke:#f0883e,color:#c9d1d9
+    style W2 fill:#161b22,stroke:#f0883e,color:#c9d1d9
+    style W3 fill:#161b22,stroke:#f0883e,color:#c9d1d9
+  </div>
+</div>
+
+<!-- ==================== 图表 2 ==================== -->
+<div class="card">
+  <h2><span class="num">#2</span>数据从哪来 — 三条数据管道</h2>
+  <p class="desc">三个因子各有各的数据来源，全部通过 AKShare 免费接口获取，拿到后先存到 SQLite 缓存（小抄），48 小时内不用重新拉。</p>
+  <div class="mermaid">
+graph LR
+    subgraph sources["外部数据源（免费）"]
+        NYSE["NYSE 纽交所<br/>XOM/CVX/SHEL/BP 股价"]
+        EIA["美国能源署 EIA<br/>每周原油库存报告"]
+        ICE["ICE 期货交易所<br/>布伦特原油 B00Y"]
+    end
+
+    subgraph akshare["AKShare 接口层"]
+        A1["stock_us_hist<br/>美股日线行情"]
+        A2["macro_usa_eia_crude_rate<br/>EIA 库存数据"]
+        A3["futures_global_hist_em<br/>全球期货行情"]
+    end
+
+    subgraph cache["SQLite 缓存（小抄）"]
+        C1["macro:oil_majors_weekly<br/>48h 过期"]
+        C2["macro:eia_surprise<br/>48h 过期"]
+        C3["macro:brent_weekly<br/>48h 过期"]
+    end
+
+    MP["MacroProvider<br/>macro_provider.py"]
+
+    NYSE --> A1 --> MP
+    EIA --> A2 --> MP
+    ICE --> A3 --> MP
+    MP --> C1
+    MP --> C2
+    MP --> C3
+
+    style sources fill:#1a2332,stroke:#3fb950,stroke-width:2px,color:#c9d1d9
+    style akshare fill:#1a2332,stroke:#58a6ff,stroke-width:2px,color:#c9d1d9
+    style cache fill:#1a2332,stroke:#bc8cff,stroke-width:2px,color:#c9d1d9
+    style NYSE fill:#161b22,stroke:#3fb950,color:#c9d1d9
+    style EIA fill:#161b22,stroke:#3fb950,color:#c9d1d9
+    style ICE fill:#161b22,stroke:#3fb950,color:#c9d1d9
+    style A1 fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style A2 fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style A3 fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style C1 fill:#161b22,stroke:#bc8cff,color:#c9d1d9
+    style C2 fill:#161b22,stroke:#bc8cff,color:#c9d1d9
+    style C3 fill:#161b22,stroke:#bc8cff,color:#c9d1d9
+    style MP fill:#1f2937,stroke:#f0883e,stroke-width:2px,color:#c9d1d9
+  </div>
+</div>
+
+<!-- ==================== 图表 3 ==================== -->
+<div class="card">
+  <h2><span class="num">#3</span>三因子信号计算 — 从原始数据到 -1 ~ +1 的信号</h2>
+  <p class="desc">
+    每个因子拿到原始数据后，都要做两件事：① 算出一个能反映「看多/看空」的数值；② 用 tanh 函数压缩到 -1（极度看空）到 +1（极度看多）之间。
+    就像把温度计的读数统一换算成「热/冷」的评分。
+  </p>
+  <div class="mermaid">
+graph TD
+    subgraph f1["因子1：国际油企（权重 50%）"]
+        F1A["拉 XOM/CVX/SHEL/BP 日线"] --> F1B["聚合成周度收盘价"]
+        F1B --> F1C["算等权组合的周收益率"]
+        F1C --> F1D["tanh 压缩到 -1~+1<br/>涨3%就接近满分+0.95"]
+    end
+
+    subgraph f2["因子2：EIA 库存超预期（权重 30%）"]
+        F2A["拉 EIA 原油库存数据"] --> F2B["今值 - 预测值 = surprise"]
+        F2B --> F2C["取反！库存少于预期=利好"]
+        F2C --> F2D["tanh 压缩到 -1~+1<br/>偏差3万桶就接近满分"]
+    end
+
+    subgraph f3["因子3：布伦特动量（权重 20%）"]
+        F3A["拉布伦特原油日线"] --> F3B["聚合成周度收盘价"]
+        F3B --> F3C["算本周vs上周的涨跌幅"]
+        F3C --> F3D["tanh 压缩到 -1~+1<br/>涨4%就接近满分+0.95"]
+    end
+
+    F1D --> COMP["加权合成<br/>F1*0.5 + F2*0.3 + F3*0.2"]
+    F2D --> COMP
+    F3D --> COMP
+
+    style f1 fill:#1a2332,stroke:#58a6ff,stroke-width:2px,color:#c9d1d9
+    style f2 fill:#1a2332,stroke:#3fb950,stroke-width:2px,color:#c9d1d9
+    style f3 fill:#1a2332,stroke:#f0883e,stroke-width:2px,color:#c9d1d9
+    style COMP fill:#1f2937,stroke:#bc8cff,stroke-width:3px,color:#c9d1d9
+
+    style F1A fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style F1B fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style F1C fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style F1D fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+
+    style F2A fill:#161b22,stroke:#3fb950,color:#c9d1d9
+    style F2B fill:#161b22,stroke:#3fb950,color:#c9d1d9
+    style F2C fill:#161b22,stroke:#3fb950,color:#c9d1d9
+    style F2D fill:#161b22,stroke:#3fb950,color:#c9d1d9
+
+    style F3A fill:#161b22,stroke:#f0883e,color:#c9d1d9
+    style F3B fill:#161b22,stroke:#f0883e,color:#c9d1d9
+    style F3C fill:#161b22,stroke:#f0883e,color:#c9d1d9
+    style F3D fill:#161b22,stroke:#f0883e,color:#c9d1d9
+  </div>
+</div>
+
+<!-- ==================== 图表 4 ==================== -->
+<div class="card">
+  <h2><span class="num">#4</span>仓位决策 — 信号怎么变成买卖动作</h2>
+  <p class="desc">
+    合成信号是一个 -1 到 +1 的数字。这里把它分成四档：强看多就满仓，偏多就半仓，偏空就轻仓，强看空就清仓。
+    就像根据天气预报决定穿多少衣服。
+  </p>
+  <div class="mermaid">
+graph TD
+    SIG["合成信号<br/>范围 -1 到 +1"] --> CHECK{信号落在哪个区间？}
+
+    CHECK -->|"> +0.5<br/>三因子共振看多"| FULL["满仓 100%<br/>5只上游股各20%"]
+    CHECK -->|"0 ~ +0.5<br/>偏多但不强"| HALF["半仓 50%<br/>5只各10%"]
+    CHECK -->|"-0.5 ~ 0<br/>偏空，防守"| LIGHT["轻仓 25%<br/>5只各5%"]
+    CHECK -->|"< -0.5<br/>三因子共振看空"| EMPTY["空仓 0%<br/>不持有任何股票"]
+
+    FULL --> STOCKS["标的池（等权配置）"]
+    HALF --> STOCKS
+    LIGHT --> STOCKS
+    EMPTY --> CASH["资金转为现金"]
+
+    subgraph pool["石油上游标的池"]
+        S1["601857 中国石油"]
+        S2["600938 中国海油"]
+        S3["600028 中国石化"]
+        S4["603619 中曼石油"]
+        S5["002207 准油股份"]
+    end
+
+    STOCKS --> pool
+
+    style SIG fill:#1f2937,stroke:#bc8cff,stroke-width:2px,color:#c9d1d9
+    style CHECK fill:#1f2937,stroke:#f0883e,stroke-width:2px,color:#c9d1d9
+    style FULL fill:#161b22,stroke:#3fb950,stroke-width:2px,color:#3fb950
+    style HALF fill:#161b22,stroke:#58a6ff,stroke-width:2px,color:#58a6ff
+    style LIGHT fill:#161b22,stroke:#f0883e,stroke-width:2px,color:#f0883e
+    style EMPTY fill:#161b22,stroke:#f85149,stroke-width:2px,color:#f85149
+    style STOCKS fill:#161b22,stroke:#bc8cff,color:#c9d1d9
+    style CASH fill:#161b22,stroke:#8b949e,color:#8b949e
+    style pool fill:#1a2332,stroke:#58a6ff,stroke-width:1px,color:#c9d1d9
+    style S1 fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style S2 fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style S3 fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style S4 fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style S5 fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+  </div>
+</div>
+
+<!-- ==================== 图表 5 ==================== -->
+<div class="card">
+  <h2><span class="num">#5</span>每周一执行流程 — run_weekly_oil.py 干了什么</h2>
+  <p class="desc">每周一早上跑一次这个脚本，从拉数据到出决策大概 15 秒。最后保存 JSON 决策文件和 CSV 历史记录，看板自动读取展示。</p>
+  <div class="mermaid">
+graph TD
+    START["每周一早上启动<br/>python run_weekly_oil.py"] --> CFG["读取 config.yaml<br/>检查策略是否启用"]
+    CFG --> INIT["初始化三大组件<br/>DataCache + MacroProvider<br/>+ OilUpstreamFactors"]
+
+    INIT --> STEP1["Step 1: 拉美股油企数据<br/>XOM/CVX/SHEL/BP 上周表现"]
+    STEP1 --> STEP2["Step 2: 拉 EIA 库存数据<br/>实际值 vs 预测值"]
+    STEP2 --> STEP3["Step 3: 拉布伦特原油数据<br/>本周涨跌幅"]
+
+    STEP3 --> CALC["合成三因子信号<br/>F1*0.5 + F2*0.3 + F3*0.2"]
+    CALC --> POS["查仓位对照表<br/>信号 → 满仓/半仓/轻仓/空仓"]
+
+    POS --> CMP{"跟上周决策比一比"}
+    CMP -->|"仓位没变"| HOLD["维持（HOLD）"]
+    CMP -->|"仓位变了"| REBAL["调仓（REBALANCE）"]
+    CMP -->|"第一次跑"| INIT_ACT["初始建仓（INIT）"]
+
+    HOLD --> SAVE["保存决策"]
+    REBAL --> SAVE
+    INIT_ACT --> SAVE
+
+    SAVE --> JSON["data/oil_weekly/<br/>latest_decision.json<br/>decision_20260219.json"]
+    SAVE --> CSV["data/oil_weekly/<br/>history.csv<br/>（历史记录追加）"]
+
+    JSON -.-> BOARD["Streamlit 看板<br/>自动读取展示"]
+    CSV -.-> BOARD
+
+    style START fill:#1f2937,stroke:#3fb950,stroke-width:2px,color:#c9d1d9
+    style CFG fill:#161b22,stroke:#bc8cff,color:#c9d1d9
+    style INIT fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style STEP1 fill:#161b22,stroke:#f0883e,color:#c9d1d9
+    style STEP2 fill:#161b22,stroke:#f0883e,color:#c9d1d9
+    style STEP3 fill:#161b22,stroke:#f0883e,color:#c9d1d9
+    style CALC fill:#1f2937,stroke:#bc8cff,stroke-width:2px,color:#c9d1d9
+    style POS fill:#161b22,stroke:#bc8cff,color:#c9d1d9
+    style CMP fill:#1f2937,stroke:#f0883e,stroke-width:2px,color:#c9d1d9
+    style HOLD fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style REBAL fill:#161b22,stroke:#f85149,color:#c9d1d9
+    style INIT_ACT fill:#161b22,stroke:#3fb950,color:#c9d1d9
+    style SAVE fill:#161b22,stroke:#3fb950,color:#c9d1d9
+    style JSON fill:#161b22,stroke:#bc8cff,color:#c9d1d9
+    style CSV fill:#161b22,stroke:#bc8cff,color:#c9d1d9
+    style BOARD fill:#1f2937,stroke:#3fb950,stroke-width:2px,color:#c9d1d9
+  </div>
+</div>
+
+<!-- ==================== 图表 6 ==================== -->
+<div class="card">
+  <h2><span class="num">#6</span>文件结构 — 代码都放在哪</h2>
+  <p class="desc">整个周频策略只新增了 3 个文件，改了 2 个文件。核心逻辑分三层：数据获取层、因子计算层、执行层。</p>
+  <div class="mermaid">
+graph TD
+    subgraph root["D:/quant-stock-picker/"]
+        RUN["run_weekly_oil.py<br/>入口：每周跑一次"]
+        CONFIG["config/config.yaml<br/>油价策略配置段"]
+        APP["app.py<br/>看板新增面板"]
+
+        subgraph data_layer["quant/data/ 数据层"]
+            MACRO["macro_provider.py<br/>跨市场数据获取<br/>（新建）"]
+            CACHE["cache.py<br/>SQLite 缓存<br/>（复用）"]
+        end
+
+        subgraph factor_layer["quant/factors/ 因子层"]
+            OIL["oil_upstream_factors.py<br/>3因子计算+仓位<br/>（新建）"]
+        end
+
+        subgraph output["data/oil_weekly/ 输出"]
+            JSON_OUT["latest_decision.json"]
+            HIST["history.csv"]
+        end
+    end
+
+    RUN --> CONFIG
+    RUN --> MACRO
+    RUN --> OIL
+    MACRO --> CACHE
+    OIL --> MACRO
+    RUN --> JSON_OUT
+    RUN --> HIST
+    APP -.-> JSON_OUT
+    APP -.-> HIST
+
+    style root fill:#0d1117,stroke:#30363d,stroke-width:1px,color:#c9d1d9
+    style data_layer fill:#1a2332,stroke:#3fb950,stroke-width:1px,color:#c9d1d9
+    style factor_layer fill:#1a2332,stroke:#f0883e,stroke-width:1px,color:#c9d1d9
+    style output fill:#1a2332,stroke:#bc8cff,stroke-width:1px,color:#c9d1d9
+
+    style RUN fill:#161b22,stroke:#3fb950,stroke-width:2px,color:#3fb950
+    style CONFIG fill:#161b22,stroke:#bc8cff,color:#c9d1d9
+    style APP fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style MACRO fill:#161b22,stroke:#f0883e,stroke-width:2px,color:#f0883e
+    style CACHE fill:#161b22,stroke:#8b949e,color:#c9d1d9
+    style OIL fill:#161b22,stroke:#f0883e,stroke-width:2px,color:#f0883e
+    style JSON_OUT fill:#161b22,stroke:#bc8cff,color:#c9d1d9
+    style HIST fill:#161b22,stroke:#bc8cff,color:#c9d1d9
+  </div>
+</div>
+
+<!-- ==================== 图表 7 ==================== -->
+<div class="card">
+  <h2><span class="num">#7</span>信号为什么这样设计 — Alpha 来源解读</h2>
+  <p class="desc">
+    这个策略赚钱的核心逻辑：美股油企比 A 股石油股早反应 1-3 天。所以看美股油企本周表现，就能提前知道 A 股下周会怎么走。
+    EIA 库存和布伦特油价是辅助确认。
+  </p>
+  <div class="mermaid">
+graph LR
+    subgraph timeline["时间线"]
+        direction LR
+        MON_US["周一~周五<br/>美股油企交易"]
+        FRI_US["周五<br/>美股收盘"]
+        SAT["周末<br/>A股休市"]
+        MON_CN["下周一早上<br/>跑策略 + A股开盘"]
+    end
+
+    MON_US --> FRI_US --> SAT --> MON_CN
+
+    subgraph alpha["Alpha 来源"]
+        LEAD["美股领先效应<br/>XOM/CVX 先涨 → <br/>A股中石油后涨"]
+        SUPPLY["供需验证<br/>EIA 库存少于预期<br/>→ 油价有支撑"]
+        TREND["趋势确认<br/>布伦特在涨<br/>→ 不是假信号"]
+    end
+
+    FRI_US -.->|"1-3天领先"| LEAD
+    LEAD -->|"权重50%<br/>最重要"| SIGNAL["合成决策信号"]
+    SUPPLY -->|"权重30%<br/>供需验证"| SIGNAL
+    TREND -->|"权重20%<br/>趋势兜底"| SIGNAL
+    SIGNAL --> MON_CN
+
+    style timeline fill:#1a2332,stroke:#58a6ff,stroke-width:1px,color:#c9d1d9
+    style alpha fill:#1a2332,stroke:#f0883e,stroke-width:1px,color:#c9d1d9
+    style MON_US fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style FRI_US fill:#161b22,stroke:#3fb950,stroke-width:2px,color:#3fb950
+    style SAT fill:#161b22,stroke:#8b949e,color:#8b949e
+    style MON_CN fill:#161b22,stroke:#f85149,stroke-width:2px,color:#f85149
+    style LEAD fill:#161b22,stroke:#f0883e,color:#c9d1d9
+    style SUPPLY fill:#161b22,stroke:#3fb950,color:#c9d1d9
+    style TREND fill:#161b22,stroke:#58a6ff,color:#c9d1d9
+    style SIGNAL fill:#1f2937,stroke:#bc8cff,stroke-width:2px,color:#c9d1d9
+  </div>
+</div>
+
+<!-- ==================== 图表 8 ==================== -->
+<div class="card">
+  <h2><span class="num">#8</span>实际数据示例 — 本周（2026-02-19）的决策</h2>
+  <p class="desc">
+    用真实跑出来的数据解释：美股油企本周小涨 1%（偏多），但 EIA 库存暴增 441 万桶远超预期（强看空），
+    布伦特原油涨了 4.3%（强看多）。三个信号打架，合成结果刚好过零 → 半仓观望。
+  </p>
+  <div class="mermaid">
+graph TD
+    subgraph real["2026-02-19 实际数据"]
+        R1["F1 美股油企<br/>周收益 +1.02%<br/>信号 +0.328"]
+        R2["F2 EIA 库存<br/>surprise +441.5<br/>信号 -1.000"]
+        R3["F3 布伦特<br/>周涨 +4.28%<br/>信号 +0.790"]
+    end
+
+    R1 -->|"x 0.50"| CALC["加权计算<br/>0.328*0.5 + (-1.0)*0.3 + 0.79*0.2"]
+    R2 -->|"x 0.30"| CALC
+    R3 -->|"x 0.20"| CALC
+
+    CALC --> RESULT["合成信号 = +0.022<br/>刚过零线一点点"]
+    RESULT --> DECIDE["半仓 50%<br/>5只上游股各10%"]
+
+    DECIDE --> WHY["解读：美股和油价说看多<br/>但库存暴增说看空<br/>→ 谨慎半仓观望"]
+
+    style real fill:#1a2332,stroke:#f0883e,stroke-width:1px,color:#c9d1d9
+    style R1 fill:#161b22,stroke:#3fb950,stroke-width:2px,color:#3fb950
+    style R2 fill:#161b22,stroke:#f85149,stroke-width:2px,color:#f85149
+    style R3 fill:#161b22,stroke:#3fb950,stroke-width:2px,color:#3fb950
+    style CALC fill:#1f2937,stroke:#bc8cff,stroke-width:2px,color:#c9d1d9
+    style RESULT fill:#161b22,stroke:#58a6ff,stroke-width:2px,color:#58a6ff
+    style DECIDE fill:#161b22,stroke:#f0883e,stroke-width:2px,color:#f0883e
+    style WHY fill:#161b22,stroke:#8b949e,color:#8b949e
+  </div>
+</div>
+
+<div class="footer">
+  石油上游周频策略架构可视化 | 项目: D:/quant-stock-picker/ | 生成时间: 2026-02-19
+</div>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#161b22',
+    primaryTextColor: '#c9d1d9',
+    primaryBorderColor: '#30363d',
+    lineColor: '#58a6ff',
+    secondaryColor: '#1a2332',
+    tertiaryColor: '#0d1117',
+    fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif',
+  },
+  flowchart: {
+    htmlLabels: true,
+    curve: 'basis',
+    nodeSpacing: 40,
+    rankSpacing: 50,
+  },
+});
+</script>
+</body>
+</html>
